@@ -23,7 +23,8 @@ Watch YouTube video with same steps - https://youtu.be/HMACPeJBtaI
 
 ![See image](https://raw.githubusercontent.com/LiveHelperChat/pluginshopify/main/doc/shopify.png)
 
-3. Activate extension in `settings/settings.ini.php` by putting `pluginshopify` in `extensions` section.
+4. Activate extension in `settings/settings.ini.php` by putting `pluginshopify` in `extensions` section.
+5. [Clear cache](https://doc.livehelperchat.com/docs/system/clearing-cache/) in system configuration
 
 ```
 'extensions' =>
