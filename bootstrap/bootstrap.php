@@ -17,19 +17,6 @@ class erLhcoreClassExtensionPluginshopify
     public function run()
     {
         $this->registerAutoload ();
-
-        $dispatcher = erLhcoreClassChatEventDispatcher::getInstance();
-
-        /**
-         * We listen to all events, but check is done only in even method. This way we save 1 disk call for configuraiton file read.
-         * */
-
-        /**
-         * User events
-         */
-        $dispatcher->listen('chat.close', array($this, 'chatClosed'));
-        $dispatcher->listen('chat.chat_started', array($this, 'chatCreated'));
-        $dispatcher->listen('chat.chat_offline_request', array($this, 'chatOfflineRequest'));
     }
 
     public function registerAutoload() {
@@ -58,7 +45,7 @@ class erLhcoreClassExtensionPluginshopify
 
     public function autoload($className) {
         $classesArray = array (
-            'erLhcoreClassOsTicketValidator' => 'extension/osticket/classes/erlhcoreclassosticketvalidator.php'
+            
         );
 
         if (key_exists ( $className, $classesArray )) {
