@@ -2,7 +2,6 @@
 
 $ext = erLhcoreClassModule::getExtensionInstance('erLhcoreClassExtensionPluginshopify');
 
-
 try {
 
     // Set variables for our request
@@ -57,13 +56,13 @@ try {
         curl_setopt($ch, CURLOPT_POST, count($query));
         curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($query));
         $resultRequest = curl_exec($ch);
+        $httpcode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+
         curl_close($ch);
 
         if (curl_errno($ch)) {
             $http_error = curl_error($ch);
         }
-
-        $httpcode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 
         if ($httpcode == 200) {
             // Store the access token
@@ -95,6 +94,8 @@ try {
 
 } catch (Exception $e) {
 
+    header('X-Frame-Options: ALLOWALL');
+
     $tpl = erLhcoreClassTemplate::getInstance('lhkernel/validation_error.tpl.php');
     $tpl->set('errors',array($e->getMessage()));
     $Result['content'] = $tpl->fetch();
@@ -107,6 +108,10 @@ try {
 
         if (isset($resultRequest)) {
             $paramsLog['result'] = $resultRequest;
+        }
+
+        if (isset($httpcode)) {
+            $paramsLog['http_code'] = $httpcode;
         }
 
         if (isset($query)) {
