@@ -18,6 +18,7 @@ class erLhcoreClassExtensionPluginshopify
     public function run()
     {
         $this->registerAutoload ();
+
     }
 
     public static function getSession() {
