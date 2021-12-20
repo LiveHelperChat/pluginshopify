@@ -2,6 +2,8 @@
 
 $ext = erLhcoreClassModule::getExtensionInstance('erLhcoreClassExtensionPluginshopify');
 
+header('X-Frame-Options: ALLOWALL');
+
 try {
 
     // Set variables for our request
@@ -69,15 +71,29 @@ try {
             $resultAccess = json_decode($resultRequest, true);
             if (isset($resultAccess['access_token'])) {
 
-                $shopifyOptions = erLhcoreClassModelChatConfig::fetch('shopify_options');
-                $data = (array) $shopifyOptions->data;
-                $data['shops'][$params['shop']]['access_token'] = $resultAccess['access_token'];
-                $shopifyOptions->explain = '';
-                $shopifyOptions->type = 0;
-                $shopifyOptions->hidden = 1;
-                $shopifyOptions->identifier = 'shopify_options';
-                $shopifyOptions->value = serialize($data);
-                $shopifyOptions->saveThis();
+                if ($ext->settings['automated_hosting'] == true) {
+
+                    $shop = erLhcoreClassModelShopifyShop::findOne(['filter' => ['shop' => $params['shop']]]);
+
+                    if (!($shop instanceof erLhcoreClassModelShopifyShop)) {
+                        $shop = new erLhcoreClassModelShopifyShop();
+                        $shop->shop = $params['shop'];
+                    }
+
+                    $shop->access_token = $resultAccess['access_token'];
+                    $shop->saveThis();
+
+                } else {
+                    $shopifyOptions = erLhcoreClassModelChatConfig::fetch('shopify_options');
+                    $data = (array) $shopifyOptions->data;
+                    $data['shops'][$params['shop']]['access_token'] = $resultAccess['access_token'];
+                    $shopifyOptions->explain = '';
+                    $shopifyOptions->type = 0;
+                    $shopifyOptions->hidden = 1;
+                    $shopifyOptions->identifier = 'shopify_options';
+                    $shopifyOptions->value = serialize($data);
+                    $shopifyOptions->saveThis();
+                }
 
                 header('Location: https://' . $params['shop'] . '/admin/apps');
                 exit();
@@ -94,7 +110,7 @@ try {
 
 } catch (Exception $e) {
 
-    header('X-Frame-Options: ALLOWALL');
+    print_r($e);
 
     $tpl = erLhcoreClassTemplate::getInstance('lhkernel/validation_error.tpl.php');
     $tpl->set('errors',array($e->getMessage()));

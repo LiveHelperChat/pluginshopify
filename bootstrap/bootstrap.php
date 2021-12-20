@@ -1,14 +1,15 @@
 <?php
 
 /**
- * Direct integration with os-ticket
+ * Shopify integration
  * */
 class erLhcoreClassExtensionPluginshopify
 {
 
     public $configData = false;
     private $accessData = [];
-
+    private static $persistentSession;
+    
     public function __construct()
     {
 
@@ -17,19 +18,13 @@ class erLhcoreClassExtensionPluginshopify
     public function run()
     {
         $this->registerAutoload ();
+    }
 
-        $dispatcher = erLhcoreClassChatEventDispatcher::getInstance();
-
-        /**
-         * We listen to all events, but check is done only in even method. This way we save 1 disk call for configuraiton file read.
-         * */
-
-        /**
-         * User events
-         */
-        $dispatcher->listen('chat.close', array($this, 'chatClosed'));
-        $dispatcher->listen('chat.chat_started', array($this, 'chatCreated'));
-        $dispatcher->listen('chat.chat_offline_request', array($this, 'chatOfflineRequest'));
+    public static function getSession() {
+        if (! isset ( self::$persistentSession )) {
+            self::$persistentSession = new ezcPersistentSession ( ezcDbInstance::get (), new ezcPersistentCodeManager ( './extension/pluginshopify/pos' ) );
+        }
+        return self::$persistentSession;
     }
 
     public function registerAutoload() {
@@ -57,21 +52,13 @@ class erLhcoreClassExtensionPluginshopify
     }
 
     public function autoload($className) {
+
         $classesArray = array (
-            'erLhcoreClassOsTicketValidator' => 'extension/osticket/classes/erlhcoreclassosticketvalidator.php'
+            'erLhcoreClassModelShopifyShop' => 'extension/pluginshopify/classes/erlhcoreclassmodelshopifyshop.php'
         );
 
         if (key_exists ( $className, $classesArray )) {
             include_once $classesArray [$className];
-        }
-    }
-
-    public function getConfig()
-    {
-        if ($this->configData === false) {
-            $osTicketOptions = erLhcoreClassModelChatConfig::fetch('osticket_options');
-            $data = (array) $osTicketOptions->data;
-            $this->configData = $data;
         }
     }
 
@@ -83,13 +70,124 @@ class erLhcoreClassExtensionPluginshopify
         return $this->accessData[$attr];
     }
 
-    public function verifyAccessToken($access_token, $shop) {
-
+    public function verifyAccessToken($access_token, $shop)
+    {
         $response = $this->shopifyCall("/admin/api/2021-10/script_tags.json", array('src' => erLhcoreClassBBCode::getHost() . erLhcoreClassDesign::baseurl('shopify/script') . '/' . $shop) , 'GET');
 
         if (!is_array($response) || $response['http_code'] == 401) {
             erLhcoreClassLog::write('Shopify : ACCESS_TOKEN_INVALID '.print_r($response, true));
             throw new Exception('Access token is invalid!');
+        }
+    }
+
+    public function getIntegrationSettings($params)
+    {
+        $url = 'https://' . $params['address'] . '.' . erConfigClassLhConfig::getInstance()->getSetting( 'site', 'seller_domain' ) . erLhcoreClassDesign::baseurl('shopify/integrationsettings');
+        $ts =  time();
+        $secretHash = erConfigClassLhConfig::getInstance()->getSetting( 'site', 'seller_secret_hash' );
+
+        $payloadData = [
+            'verify_token' => sha1($secretHash.sha1($secretHash.'_external_login_' . $ts)),
+            'ts' => $ts,
+            'shop' => $params['shop'],
+            'action' => 'get'
+        ];
+
+        $response = $this->makeInstanceCall([
+            'url' => $url,
+            'payload_data' => $payloadData,
+        ]);
+
+        return $response;
+    }
+
+    public function setIntegrationSettings($params)
+    {
+        $url = 'https://' . $params['address'] . '.' . erConfigClassLhConfig::getInstance()->getSetting( 'site', 'seller_domain' ) . erLhcoreClassDesign::baseurl('shopify/integrationsettings');
+        $ts =  time();
+        $secretHash = erConfigClassLhConfig::getInstance()->getSetting( 'site', 'seller_secret_hash' );
+
+        $payloadData = [
+            'verify_token' => sha1($secretHash.sha1($secretHash.'_external_login_' . $ts)),
+            'ts' => $ts,
+            'shop' => $params['shop'],
+            'action' => 'set',
+            'params_integration' => $params['params_integration']
+        ];
+
+        $response = $this->makeInstanceCall([
+            'url' => $url,
+            'payload_data' => $payloadData,
+        ]);
+
+        return $response;
+    }
+
+    public function validateAutomatedHosting($params)
+    {
+
+        $url = 'https://' . $params['address'] . '.' . erConfigClassLhConfig::getInstance()->getSetting( 'site', 'seller_domain' ) . erLhcoreClassDesign::baseurl('shopify/verifyinstance');
+        $ts =  time();
+        $secretHash = erConfigClassLhConfig::getInstance()->getSetting( 'site', 'seller_secret_hash' );
+
+        $payloadData = [
+            'verify_token' => sha1($secretHash.sha1($secretHash.'_external_login_' . $ts)),
+            'ts' => $ts,
+            'username' => $params['username'],
+            'password' => $params['password'],
+        ];
+
+        $response = $this->makeInstanceCall([
+            'url' => $url,
+            'payload_data' => $payloadData,
+        ]);
+
+        return $response;
+
+    }
+
+    public function makeInstanceCall($params) {
+        $curl = curl_init($params['url']);
+        curl_setopt($curl, CURLOPT_RETURNTRANSFER, TRUE);
+        curl_setopt($curl, CURLOPT_FOLLOWLOCATION, TRUE);
+        curl_setopt($curl, CURLOPT_MAXREDIRS, 3);
+        curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, FALSE);
+        curl_setopt($curl, CURLOPT_USERAGENT, 'Live Helper Chat v.1');
+        curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, 30);
+        curl_setopt($curl, CURLOPT_TIMEOUT, 30);
+        curl_setopt($curl, CURLOPT_CUSTOMREQUEST, 'POST');
+
+        // Setup headers
+        $request_headers[] = "Content-Type: application/json";
+        curl_setopt($curl, CURLOPT_HTTPHEADER, $request_headers);
+        curl_setopt ($curl, CURLOPT_POSTFIELDS, json_encode($params['payload_data']));
+
+        $response = curl_exec($curl);
+        $error_number = curl_errno($curl);
+        $error_message = curl_error($curl);
+        $http_code = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+
+        // Close cURL to be nice
+        curl_close($curl);
+
+        if ($error_number) {
+            return $error_message;
+        } else {
+            $responseData = json_decode($response, true);
+            if ($http_code == 200) {
+                return [
+                    'response' => $responseData,
+                    'valid' => true
+                ];
+            } else {
+                return [
+                    'http_code' => $http_code,
+                    'error_message' => $error_message,
+                    'response' => $response,
+                    'response_data' => $responseData,
+                    'valid' => false
+                ];
+            }
         }
     }
 

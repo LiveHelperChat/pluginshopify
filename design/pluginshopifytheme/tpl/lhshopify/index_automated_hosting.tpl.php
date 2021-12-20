@@ -1,9 +1,10 @@
 <h5><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('plugin/shopify','Please configure your widget settings.')?></h5>
 
 <?php
-    $response = $ext->shopifyCall("/admin/api/2021-10/script_tags.json", array('src' =>  erLhcoreClassBBCode::getHost() . erLhcoreClassDesign::baseurl('shopify/script') . '/' . $ext->getAccessAttribute('shop')) , 'GET');
 
-    if (is_array($response)) : $responseJSON = json_decode($response['response'], true); ?>
+$response = $ext->shopifyCall("/admin/api/2021-10/script_tags.json", array('src' => 'https://' . $instance->address . '.' . $seller_domain  . erLhcoreClassDesign::baseurl('shopify/script') . '/' . $ext->getAccessAttribute('shop')) , 'GET');
+
+if (is_array($response)) : $responseJSON = json_decode($response['response'], true); ?>
     <form action="" method="post" ng-non-bindable onsubmit="$(this).find('button[type=\'submit\']').addClass('disabled');">
 
         <?php include(erLhcoreClassDesign::designtpl('lhkernel/csfr_token.tpl.php'));?>
@@ -19,8 +20,8 @@
         <div class="form-group">
             <label><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('plugin/shopify','Department. If you do not choose any department we will show all available departments in the widget.')?></label>
             <select name="custom_dep_id[]" multiple="multiple" size="5" class="form-control form-control-sm">
-                <?php foreach (erLhcoreClassModelDepartament::getList($departmentParams) as $departament) : $value = $departament->alias != '' ? htmlspecialchars($departament->alias) : $departament->id?>
-                    <option <?php if (isset($ext_settings['custom_dep_id']) && is_array($ext_settings['custom_dep_id']) && in_array($value, $ext_settings['custom_dep_id'])) : ?>selected="selected"<?php endif;?> value="<?php echo $value?>"><?php echo htmlspecialchars($departament->name)?></option>
+                <?php foreach ($departments as $departament) : $value = $departament['id']?>
+                    <option <?php if (isset($ext_settings['custom_dep_id']) && is_array($ext_settings['custom_dep_id']) && in_array($value, $ext_settings['custom_dep_id'])) : ?>selected="selected"<?php endif;?> value="<?php echo htmlspecialchars($value)?>"><?php echo htmlspecialchars($departament['name'])?></option>
                 <?php endforeach; ?>
             </select>
         </div>
@@ -29,8 +30,8 @@
             <label><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('plugin/shopify','Default theme')?></label>
             <select name="custom_theme_id" class="form-control form-control-sm">
                 <option value="0"><?php echo erTranslationClassLhTranslation::getInstance()->getTranslation('system/htmlcode','Default');?></option>
-                <?php foreach (erLhAbstractModelWidgetTheme::getList(array('limit' => 1000)) as $theme) : $value = $theme->alias != '' ? htmlspecialchars($theme->alias) : $theme->id?>
-                    <option <?php if (isset($ext_settings['custom_theme_id']) && $value == $ext_settings['custom_theme_id'] ? 'selected="selected"' : '') : ?>selected="selected"<?php endif;?> value="<?php echo $value?>"><?php echo htmlspecialchars($theme->name)?></option>
+                <?php foreach ($themes as $theme) : $value = $theme['id']?>
+                    <option <?php if (isset($ext_settings['custom_theme_id']) && $value == $ext_settings['custom_theme_id'] ? 'selected="selected"' : '') : ?>selected="selected"<?php endif;?> value="<?php echo htmlspecialchars($value)?>"><?php echo htmlspecialchars($theme['name'])?></option>
                 <?php endforeach; ?>
             </select>
         </div>
@@ -44,7 +45,7 @@
                     <textarea class="form-control form-control-sm fs12" rows="10" id="id_embed_script" name="embed_script"><?php
                         $paramsEmbed = $paramsEmbedDefault = [
                             'mode' => 'widget',
-                            'lhc_base_url' => '//' . $_SERVER['HTTP_HOST'] . '/',
+                            'lhc_base_url' => '//' .  $instance->address . '.' . $seller_domain . '/',
                             'wheight' => 450,
                             'wwidth' => 350,
                             'pwidth' => 500,
@@ -89,7 +90,7 @@
         </div>
     </form>
 
-    <?php else : ?>
-        <p ng-non-bindable><?php echo htmlspecialchars($response)?></p>
-    <?php endif;?>
+<?php else : ?>
+    <p ng-non-bindable><?php echo htmlspecialchars($response)?></p>
+<?php endif;?>
 

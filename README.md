@@ -8,7 +8,7 @@ With this extension you can integrate Live Helper Chat with your own shopify sto
 * Live Helper Chat 3.91
 * PHP 7.3 >=
 
-### Instructions
+### Instructions Standalone
 
 Watch YouTube video with same steps - https://youtu.be/HMACPeJBtaI
 
@@ -33,3 +33,8 @@ Watch YouTube video with same steps - https://youtu.be/HMACPeJBtaI
     ),
 ```
 
+### Instructions Automated Hosting
+
+1. Follow `Instructions Standalone` and in `extension/pluginshopify/settings/settings.ini.php` set `automated_hosting` to `true`
+2. Extension has to be installed on client and manager at the same time.
+3. Execute `doc/db.sql` on your manager database.

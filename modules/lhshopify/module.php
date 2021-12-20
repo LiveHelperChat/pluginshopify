@@ -23,5 +23,13 @@ $ViewList['script'] = array(
     'params' => array('shop'),
 );
 
+$ViewList['verifyinstance'] = array(
+    'params' => array(),
+);
+
+$ViewList['integrationsettings'] = array(
+    'params' => array(),
+);
+
 $FunctionList = array();
 $FunctionList['use'] = array('explain' => 'Allow operator to configure shopify widget');
