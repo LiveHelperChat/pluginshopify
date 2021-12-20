@@ -51,6 +51,12 @@ if (isset($data['shops'][$_GET['shop']]['access_token']) && !empty($data['shops'
         }
     }
 
+    // If not iframe redirect to iframe
+    if (!(isset($_SERVER['HTTP_SEC_FETCH_DEST']) && $_SERVER['HTTP_SEC_FETCH_DEST'] == 'iframe' )) {
+        header('Location: https://' . $_GET['shop'] . '/admin/apps');
+        exit();
+    }
+
     // Set variables for our request
     $api_key = $ext->settings['app_settings']['api_key'];
     $shared_secret = $ext->settings['app_settings']['api_secret_key'];
