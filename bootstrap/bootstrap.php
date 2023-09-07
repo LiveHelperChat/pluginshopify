@@ -3,6 +3,7 @@
 /**
  * Shopify integration
  * */
+#[\AllowDynamicProperties]
 class erLhcoreClassExtensionPluginshopify
 {
 
